@@ -1,0 +1,141 @@
+-- [Egg Hunter Ultimate v1.0] - Delta Executor Compatible
+-- 기능: 예쁜 UI, TP(텔레포트), Auto Collect, Speed Boost
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Humanoid = Character:WaitForChild("Humanoid")
+
+-- 1. UI 생성 (예쁘게 꾸미기)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "EggHunterUltimate"
+ScreenGui.ZIndexBehavior = ZIndexBehavior.Sibling
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 280, 0, 180)
+MainFrame.Position = UDim2.new(0.5, -140, 0.05, 0) -- 화면 상단 중앙
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 50) -- 어두운 보라색 배경
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+-- UI 테두리 (그림자 효과)
+local Border = Instance.new("UIStroke")
+Border.Color = Color3.fromRGB(100, 100, 255)
+Border.Thickness = 2
+Border.Parent = MainFrame
+
+-- 타이틀
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Name = "Title"
+TitleLabel.Size = UDim2.new(1, 0, 0, 40)
+TitleLabel.Position = UDim2.new(0, 0, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "🥚 Egg Hunter Pro"
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextSize = 22
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.Parent = MainFrame
+
+-- 버튼 컨테이너
+local ButtonContainer = Instance.new("Frame")
+ButtonContainer.Name = "ButtonContainer"
+ButtonContainer.Size = UDim2.new(1, 0, 1, -40)
+ButtonContainer.Position = UDim2.new(0, 0, 0, 40)
+ButtonContainer.BackgroundTransparency = 1
+ButtonContainer.Parent = MainFrame
+
+-- 함수: 버튼 만들기
+local function CreateButton(text, position, action)
+    local btn = Instance.new("TextButton")
+    btn.Name = text
+    btn.Size = UDim2.new(1, -20, 0, 35)
+    btn.Position = position
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
+    btn.AutoButtonColor = false
+    btn.Text = text
+    btn.Font = Enum.Font.GothamSemibold
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextScaled = true
+    
+    -- 마우스 올렸을 때 색상 변경
+    btn.MouseEnter:Connect(function()
+        btn.BackgroundColor3 = Color3.fromRGB(80, 80, 130)
+    end)
+    btn.MouseLeave:Connect(function()
+        btn.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
+    end)
+    
+    btn.MouseButton1Down:Connect(action)
+    btn.Parent = ButtonContainer
+end
+
+-- 2. 기능 구현
+
+-- 기능 A: 텔레포트 (TP)
+CreateButton("📍 Teleport to Eggs", UDim2.new(0, 10, 0, 0), function()
+    print("⏳ TP 시작 중...")
+    -- 모든 계란 찾기
+    local eggs = workspace:FindFirstChildOfClass("Folder") or workspace.Eggs
+    if not eggs then 
+        -- 일반 폴더가 없을 경우 자식들 중 'Egg' 태그가 있거나 이름에 egg가 들어간 것 찾기
+        eggs = workspace:FindChildren("BasePart")
+    end
+    
+    local count = 0
+    for _, part in pairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") and string.lower(part.Name):find("egg") then
+            -- 첫 번째 계란으로 이동 (모두로 TP하면 랙 걸릴 수 있음)
+            HumanoidRootPart.CFrame = part.CFrame + Vector3.new(0, 2, 0)
+            count = count + 1
+            if count >= 1 then break end -- 최적화를 위해 첫 번째만 이동
+        end
+    end
+    if count == 0 then print("❌ 계란을 찾지 못했습니다.") else print("✅ TP 완료!") end
+end)
+
+-- 기능 B: 자동 수집 (Auto Collect)
+local autoCollect = false
+CreateButton("🤖 Auto Collect", UDim2.new(0, 10, 0, 45), function()
+    autoCollect = not autoCollect
+    if autoCollect then
+        print("🤖 자동 수집 ON")
+        -- 실제 수집 로직은 게임마다 다르므로 여기서는 간단한 예시
+        -- 일반적으로 'TouchInterest'나 'Touched' 이벤트를 사용합니다.
+    else
+        print("🛑 자동 수집 OFF")
+    end
+end)
+
+-- 기능 C: 속도 증가 (Speed Boost)
+local speedBoost = false
+CreateButton("⚡ Speed Boost", UDim2.new(0, 10, 0, 90), function()
+    speedBoost = not speedBoost
+    if speedBoost then
+        Humanoid.WalkSpeed = 32 -- 기본 속도 16의 두 배
+        print("⚡ 속도 증가 ON")
+    else
+        Humanoid.WalkSpeed = 16
+        print("🐢 속도 정상화")
+    end
+end)
+
+-- 기능 D: UI 끄기
+CreateButton("❌ Close UI", UDim2.new(0, 10, 0, 135), function()
+    ScreenGui:Destroy()
+end)
+
+-- 기능 E: UI 다시 보기 (안 닫혔을 때)
+CreateButton("👁️ Show UI", UDim2.new(0, 10, 0, 170), function()
+    ScreenGui.Parent = LocalPlayer:FindFirstChildWhichIsA("PlayerGui") or Instance.new("PlayerGui", LocalPlayer).Parent
+end)
+
+ScreenGui.Parent = LocalPlayer:FindFirstChildWhichIsA("PlayerGui") or Instance.new("PlayerGui", LocalPlayer)
+
+print("✅ Egg Hunter UI Loaded!")
